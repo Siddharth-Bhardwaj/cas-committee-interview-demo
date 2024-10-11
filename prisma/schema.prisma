@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ROLE {
+  TUTOR
+  ADMIN
+}
+
+model User {
+  id            String     @unique @default(uuid())
+  netId         String     @id @unique
+  nyuEmail      String     @unique
+  firstName     String
+  lastName      String
+  preferredName String
+  role          ROLE       @default(TUTOR)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now())
+  timeSlots     TimeSlot[]
+  // assignedCourses/department?
+}
+
+model Department {
+  id        String   @unique @default(uuid())
+  name      String
+  courses   Course[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  // school?
+}
+
+model Course {
+  id           String     @unique @default(uuid())
+  departmentId String
+  isActive     Boolean    @default(true)
+  code         String
+  name         String
+  timeSlots    TimeSlot[]
+  department   Department @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now())
+}
+
+model Location {
+  id        String     @unique @default(uuid())
+  address   String     @unique
+  // roomNumber?
+  timeSlots TimeSlot[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now())
+}
+
+model TimeSlot {
+  id           String       @id @default(uuid())
+  tutorNetId   String
+  courseId     String
+  locationId   String
+  startTime    DateTime // clarify if slots can have variable length or not; check if slots will correspond to starts and end of actual hours - might be able to use INT here in that case
+  endTime      DateTime // not required if slots will have fixed length
+  isBooked     Boolean      @default(false) // so that we dont need to query appointments table to find available slots
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now())
+  user         User         @relation(fields: [tutorNetId], references: [netId])
+  appointments Appointment? // multiple apointments for 1 slot?
+  course       Course       @relation(fields: [courseId], references: [id])
+  location     Location     @relation(fields: [locationId], references: [id])
+
+  @@unique([tutorNetId, startTime]) // confirm with cary; this could break stuff in the future in case a tutor can take in-person and virtual sessions simultaneously
+}
+
+model Appointment {
+  id           String   @id @default(uuid())
+  studentNetId String
+  timeSlotId   String   @unique // assuming only 1 student can book a time slot?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+  timeSlot     TimeSlot @relation(fields: [timeSlotId], references: [id])
+}
+
+// partition timeSlot/Appointment table based on year?
+// are createdBy/updatedBy required for (basic) audit trails?
+// look into ways to ensure times are timezone agnostic
+// TODO: ADD INDICES, UNIQUE CONSTRAINTS AND COMPOSITE INDICES

@@ -1,0 +1,17 @@
+.rbc-event,
+.rbc-background-event {
+  padding: 0px !important;
+  border: none !important;
+}
+
+.rbc-toolbar-label {
+  font-weight: bold;
+}
+/* 
+.rbc-allday-cell {
+    display: none;
+}
+
+.rbc-time-header-cell {
+    padding-top: 1rem;
+} */
